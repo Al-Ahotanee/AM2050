@@ -1,0 +1,2 @@
+ALTER TABLE children MODIFY COLUMN photo_url MEDIUMTEXT NULL;
+ALTER TABLE households ADD COLUMN photo_url MEDIUMTEXT NULL AFTER phone_number;

@@ -1,0 +1,18 @@
+# Keep Docker build contexts small and prevent secrets or portable data exports entering the Render image.
+.git
+.manus
+.manus-logs
+node_modules
+dist
+.pnpm-store
+.env
+.env.*
+backend/.env
+deployment/database/*.sql
+deployment/database/*.sql.gz
+deployment/artifacts
+*.log
+*.zip
+coverage
+tmp
+temp

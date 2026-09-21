@@ -1,0 +1,33 @@
+name: AM2050 Quality Gate
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Enable pnpm
+        run: corepack enable
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Type-check and build frontend
+        run: |
+          pnpm check
+          VITE_AM2050_API_URL=/api/v1 pnpm build
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: pdo_mysql, zip, gd
+          tools: composer:v2
+      - name: Install API dependencies and lint PHP
+        working-directory: backend
+        run: |
+          composer install --no-interaction --prefer-dist
+          find src public scripts -name '*.php' -print0 | xargs -0 -n1 php -l

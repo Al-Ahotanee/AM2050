@@ -1,0 +1,40 @@
+# Render Blueprint for the complete same-origin AM2050 application.
+# Create the Aiven MySQL service first, then provide the prompted secret values in Render.
+# Do not set VITE_AM2050_API_URL to a Manus sandbox hostname in production.
+services:
+  - type: web
+    name: am2050
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/v1/health
+    preDeployCommand: php /var/www/am2050-api/scripts/migrate.php
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_TIMEZONE
+        value: Africa/Lagos
+      - key: VITE_AM2050_API_URL
+        value: /api/v1
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: "3306"
+      - key: DB_NAME
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASS
+        sync: false
+      - key: DB_SSL_REQUIRED
+        value: "true"
+      - key: DB_SSL_CA_BASE64
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: COOKIE_SAMESITE
+        value: Strict

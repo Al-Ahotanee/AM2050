@@ -1,0 +1,42 @@
+/* AM2050 — Field Ledger Modernism: a simple, durable symbol that anchors the app rail. */
+type LogoMarkProps = { className?: string; size?: number };
+
+export function LogoMark({ className = "", size = 40 }: LogoMarkProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 48 48"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={`shrink-0 select-none ${className}`}
+      aria-label="AM2050 mission mark"
+      role="img"
+    >
+      <rect width="48" height="48" rx="12" fill="#064E3B" />
+      <rect x="2" y="2" width="44" height="44" rx="10" stroke="#059669" strokeWidth="1.5" strokeOpacity="0.5" />
+      {/* Subtle background radial glow */}
+      <circle cx="24" cy="24" r="16" fill="#10B981" fillOpacity="0.12" />
+      {/* Northern Star / Pinnacle */}
+      <path
+        d="M24 8L26.5 15.5L34 18L26.5 20.5L24 28L21.5 20.5L14 18L21.5 15.5L24 8Z"
+        fill="#FBBF24"
+      />
+      {/* Center diamond spark */}
+      <polygon points="24,14 25.5,18 24,22 22.5,18" fill="#F59E0B" />
+      {/* Foundation / Open Book & Shield arch */}
+      <path
+        d="M12 36C16 33.5 20 34 24 36.5C28 34 32 33.5 36 36V28C32 26 28 26.5 24 29C20 26.5 16 26 12 28V36Z"
+        fill="#34D399"
+        fillOpacity="0.9"
+      />
+      <path
+        d="M24 29V39"
+        stroke="#064E3B"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <circle cx="24" cy="18" r="2" fill="#FEF3C7" />
+    </svg>
+  );
+}

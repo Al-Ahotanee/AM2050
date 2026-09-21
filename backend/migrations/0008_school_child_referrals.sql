@@ -1,0 +1,23 @@
+CREATE TABLE school_child_referrals (
+  id CHAR(26) PRIMARY KEY,
+  school_id CHAR(26) NOT NULL,
+  reported_name VARCHAR(200) NOT NULL,
+  reported_age INT NULL,
+  reported_gender ENUM('male','female','unknown') NOT NULL DEFAULT 'unknown',
+  guardian_phone VARCHAR(20) NULL,
+  notes TEXT NULL,
+  submitted_by CHAR(26) NOT NULL,
+  status ENUM('pending','registered','could_not_locate') NOT NULL DEFAULT 'pending',
+  resolved_by CHAR(26) NULL,
+  resolved_at DATETIME NULL,
+  household_id CHAR(26) NULL,
+  converted_child_id CHAR(26) NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (school_id) REFERENCES schools(id),
+  FOREIGN KEY (submitted_by) REFERENCES users(id),
+  FOREIGN KEY (resolved_by) REFERENCES users(id),
+  FOREIGN KEY (household_id) REFERENCES households(id),
+  FOREIGN KEY (converted_child_id) REFERENCES children(id),
+  INDEX idx_school_referral_status (status, school_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

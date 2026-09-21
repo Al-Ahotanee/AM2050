@@ -1,0 +1,19 @@
+AM2050 backend production configuration
+=========================================
+
+Set these variables in Render, your container orchestrator, or another secret manager.
+Do not save populated production values in this repository.
+
+APP_ENV=production
+APP_TIMEZONE=Africa/Lagos
+DB_HOST=mysql-your-service.aivencloud.com
+DB_PORT=3306
+DB_NAME=defaultdb
+DB_USER=avnadmin
+DB_PASS=REPLACE_WITH_AIVEN_PASSWORD
+DB_SSL_REQUIRED=true
+DB_SSL_CA_BASE64=REPLACE_WITH_SINGLE_LINE_BASE64_AIVEN_CA_CERTIFICATE
+JWT_SECRET=REPLACE_WITH_UNIQUE_32_CHARACTER_MINIMUM_SECRET
+COOKIE_SECURE=true
+COOKIE_SAMESITE=Strict
+CORS_ALLOWED_ORIGIN=https://your-am2050-service.onrender.com

@@ -1,0 +1,34 @@
+{
+  "build_command": "pnpm run build",
+  "capabilities": [],
+  "dev_command": "pnpm run dev",
+  "env_vars": {},
+  "experiments": null,
+  "git_remote": {
+    "repo_url": "https://7f0548f6b28a1758d9bf7be630d36cb4.artifacts.cloudflare.net/git/prod/aPtpAAsCVodrGGyWkYi8Ub.git",
+    "expiration": "2026-08-20T23:07:06.070Z",
+    "token": "art_v2_x_98f22328f8719b6db8874ff43667a51d2d2166dc?expires=1787267226",
+    "backend": "GIT_BACKEND_ARTIFACTS"
+  },
+  "name": "am2050",
+  "path": "/home/ubuntu/am2050",
+  "port": 3000,
+  "secrets": {
+    "BUILT_IN_FORGE_API_KEY": "ZEor3XwXUJABsddH6wXyEy",
+    "BUILT_IN_FORGE_API_URL": "https://forge.manus.ai",
+    "JWT_SECRET": "4TfLLgQFxmtCsYPHxgrBN2",
+    "OAUTH_SERVER_URL": "https://api.manus.im",
+    "OWNER_NAME": "Shafiu Garba Waziri Al-Ahotane",
+    "OWNER_OPEN_ID": "Y84VaYtNwLynnvkbaq2B6u",
+    "VITE_ANALYTICS_ENDPOINT": "https://manus-analytics.com",
+    "VITE_ANALYTICS_WEBSITE_ID": "a4719c01-6198-4939-b701-cfeb91970385",
+    "VITE_APP_ID": "aPtpAAsCVodrGGyWkYi8Ub",
+    "VITE_APP_LOGO": "",
+    "VITE_APP_TITLE": "AM2050 — Arewa Mission 2050",
+    "VITE_FRONTEND_FORGE_API_KEY": "Diwm82UHP2UULgZXvRKeLv",
+    "VITE_FRONTEND_FORGE_API_URL": "https://forge.manus.ai",
+    "VITE_OAUTH_PORTAL_URL": "https://manus.im"
+  },
+  "template_id": "web-static",
+  "test_command": "pnpm test"
+}

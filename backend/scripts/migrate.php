@@ -7,7 +7,7 @@ use AM2050\Core\Env;
 require dirname(__DIR__) . '/vendor/autoload.php';
 
 $root = dirname(__DIR__);
-Env::load($root);
+Env::loadForMigration($root);
 $pdo = (new Database())->pdo();
 $pdo->exec('CREATE TABLE IF NOT EXISTS schema_migrations (version VARCHAR(255) PRIMARY KEY, applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
 $applied = array_column($pdo->query('SELECT version FROM schema_migrations')->fetchAll(), 'version');

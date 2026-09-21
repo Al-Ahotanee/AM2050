@@ -22,7 +22,7 @@ services:
       - key: DB_HOST
         sync: false
       - key: DB_PORT
-        value: "3306"
+        value: "23952"
       - key: DB_NAME
         sync: false
       - key: DB_USER
@@ -30,7 +30,7 @@ services:
       - key: DB_PASS
         sync: false
       - key: JWT_SECRET
-        generateValue: true
+        sync: false
       - key: COOKIE_SECURE
         value: "true"
       - key: COOKIE_SAMESITE

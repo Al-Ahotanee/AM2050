@@ -56,6 +56,12 @@ try {
     if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') { http_response_code(204); exit; }
     if ((Env::get('APP_ENV', 'production')) === 'production') { header('Strict-Transport-Security: max-age=31536000; includeSubDomains'); }
 
+    // Health endpoint responds immediately — before any DB connection — so Render's health check always succeeds.
+    $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+    if ($requestPath === '/api/v1/health' && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
+        Response::success(['status' => 'ok', 'service' => 'am2050-api', 'time' => gmdate(DATE_ATOM)]);
+    }
+
     $database = new Database();
     $auth = new AuthService($database->pdo());
     $authMiddleware = new AuthMiddleware($auth);

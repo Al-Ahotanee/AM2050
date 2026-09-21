@@ -14,13 +14,19 @@ final class AuthController
 
     public function login(Request $request): never
     {
-        $phone = trim((string) $request->input('phone', ''));
+        $identifier = trim((string) (
+            $request->input('phone') 
+            ?? $request->input('email') 
+            ?? $request->input('identifier') 
+            ?? $request->input('username') 
+            ?? ''
+        ));
         $password = (string) $request->input('password', '');
-        if ($phone === '' || $password === '') {
-            Response::error('Phone and password are required.', 400);
+        if ($identifier === '' || $password === '') {
+            Response::error('Phone or email and password are required.', 400);
         }
         try {
-            $result = $this->auth->login($phone, $password);
+            $result = $this->auth->login($identifier, $password);
         } catch (\RuntimeException $error) {
             $status = str_contains($error->getMessage(), 'locked') ? 429 : 401;
             Response::error($error->getMessage(), $status);

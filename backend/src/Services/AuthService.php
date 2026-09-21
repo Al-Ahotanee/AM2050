@@ -14,10 +14,28 @@ final class AuthService
 {
     public function __construct(private readonly PDO $pdo) {}
 
-    public function login(string $phone, string $password): array
+    public function login(string $identifier, string $password): array
     {
-        $statement = $this->pdo->prepare('SELECT * FROM users WHERE phone = :phone LIMIT 1');
-        $statement->execute(['phone' => $phone]);
+        $raw = trim($identifier);
+        $cleanDigits = preg_replace('/[^\d+]/', '', $raw);
+        $normPhone = $cleanDigits;
+        if (str_starts_with($normPhone, '+234')) {
+            $normPhone = '0' . substr($normPhone, 4);
+        } elseif (str_starts_with($normPhone, '234') && strlen($normPhone) === 13) {
+            $normPhone = '0' . substr($normPhone, 3);
+        }
+
+        $statement = $this->pdo->prepare(
+            'SELECT * FROM users 
+             WHERE phone = :exact 
+                OR phone = :normPhone 
+                OR (email IS NOT NULL AND LOWER(email) = LOWER(:exact))
+             LIMIT 1'
+        );
+        $statement->execute([
+            'exact' => $raw,
+            'normPhone' => $normPhone,
+        ]);
         $user = $statement->fetch();
         if ($user === false || !(bool) $user['is_active']) {
             throw new RuntimeException('Invalid credentials.');

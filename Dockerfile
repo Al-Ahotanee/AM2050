@@ -2,12 +2,12 @@
 FROM node:22-bookworm-slim AS frontend-build
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
+COPY patches ./patches
 RUN corepack enable && pnpm install --frozen-lockfile
 COPY client ./client
 COPY server ./server
 COPY shared ./shared
-COPY package.json tsconfig.json tsconfig.node.json vite.config.ts components.json ./
-COPY patches ./patches
+COPY tsconfig.json tsconfig.node.json vite.config.ts components.json ./
 ARG VITE_AM2050_API_URL=/api/v1
 ENV VITE_AM2050_API_URL=${VITE_AM2050_API_URL}
 RUN pnpm build
@@ -15,7 +15,7 @@ RUN pnpm build
 FROM composer:2 AS php-dependencies
 WORKDIR /app/backend
 COPY backend/composer.json backend/composer.lock* ./
-RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --ignore-platform-reqs
 
 FROM php:8.3-apache-bookworm
 ENV APACHE_DOCUMENT_ROOT=/var/www/html \

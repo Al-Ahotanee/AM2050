@@ -35,32 +35,8 @@ final class Database
             PDO::ATTR_EMULATE_PREPARES => false,
             PDO::MYSQL_ATTR_MULTI_STATEMENTS => true,
         ];
-        $sslCaPath = trim((string) Env::get('DB_SSL_CA_PATH', ''));
-        $rawCaInput = trim((string) Env::get('DB_SSL_CA_BASE64', ''));
-        if ($sslCaPath === '' && $rawCaInput !== '') {
-            $pemContent = '';
-            if (str_contains($rawCaInput, 'BEGIN CERTIFICATE')) {
-                $pemContent = $rawCaInput;
-            } else {
-                // Strip all whitespace, quotes, and invalid characters
-                $cleaned = preg_replace('/[^A-Za-z0-9+\/=_]/', '', $rawCaInput);
-                $decoded = base64_decode((string)$cleaned, false);
-                $pemContent = ($decoded !== false && $decoded !== '') ? $decoded : $rawCaInput;
-            }
-            if ($pemContent !== '') {
-                $sslCaPath = sys_get_temp_dir() . '/am2050-aiven-ca.pem';
-                if (file_put_contents($sslCaPath, $pemContent, LOCK_EX) !== false) {
-                    @chmod($sslCaPath, 0600);
-                } else {
-                    $sslCaPath = '';
-                }
-            }
-        }
-        if ($sslCaPath !== '' && is_readable($sslCaPath)) {
-            $options[PDO::MYSQL_ATTR_SSL_CA] = $sslCaPath;
-            if (defined('PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT')) {
-                $options[constant('PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT')] = true;
-            }
+        if (defined('PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT')) {
+            $options[constant('PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT')] = false;
         }
         $this->pdo = new PDO($dsn, $user, $pass, $options);
     }

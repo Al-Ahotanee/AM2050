@@ -17,6 +17,8 @@ services:
         value: Africa/Lagos
       - key: VITE_AM2050_API_URL
         value: /api/v1
+      - key: DATABASE_URL
+        sync: false
       - key: DB_HOST
         sync: false
       - key: DB_PORT
@@ -26,10 +28,6 @@ services:
       - key: DB_USER
         sync: false
       - key: DB_PASS
-        sync: false
-      - key: DB_SSL_REQUIRED
-        value: "true"
-      - key: DB_SSL_CA_BASE64
         sync: false
       - key: JWT_SECRET
         generateValue: true

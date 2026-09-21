@@ -9,7 +9,6 @@ services:
     dockerfilePath: ./Dockerfile
     dockerContext: .
     healthCheckPath: /api/v1/health
-    preDeployCommand: php /var/www/am2050-api/scripts/migrate.php
     autoDeployTrigger: checksPass
     envVars:
       - key: APP_ENV

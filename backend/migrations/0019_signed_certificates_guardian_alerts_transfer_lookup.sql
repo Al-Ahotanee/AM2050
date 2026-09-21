@@ -2,12 +2,18 @@ ALTER TABLE users
   ADD COLUMN signature_data MEDIUMTEXT NULL AFTER photo_data;
 
 ALTER TABLE enrollments
-  ADD COLUMN receiving_school_id CHAR(26) NULL AFTER receiving_school_name,
-  ADD COLUMN approved_signature_data MEDIUMTEXT NULL AFTER approved_at,
-  ADD COLUMN transition_signature_data MEDIUMTEXT NULL AFTER transitioned_at,
+  ADD COLUMN receiving_school_id CHAR(26) NULL AFTER receiving_school_name;
+
+ALTER TABLE enrollments
+  ADD COLUMN approved_signature_data MEDIUMTEXT NULL AFTER approved_at;
+
+ALTER TABLE enrollments
+  ADD COLUMN transition_signature_data MEDIUMTEXT NULL AFTER transitioned_at;
+
+ALTER TABLE enrollments
   ADD CONSTRAINT fk_enr_receiving_school FOREIGN KEY (receiving_school_id) REFERENCES schools(id);
 
-CREATE TABLE guardian_certificate_alerts (
+CREATE TABLE IF NOT EXISTS guardian_certificate_alerts (
   id CHAR(26) NOT NULL PRIMARY KEY,
   guardian_user_id CHAR(26) NOT NULL,
   child_id CHAR(26) NOT NULL,

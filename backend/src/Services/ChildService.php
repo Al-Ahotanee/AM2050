@@ -41,8 +41,10 @@ final class ChildService
     public function get(array $auth, string $id): array
     {
         $record = $this->fetchById($this->database->pdo(), $id); $wardId = $record['ward_id'];
-        if ($wardId === null && $record['household_id'] !== null) { $stmt = $this->database->pdo()->prepare('SELECT ward_id FROM households WHERE id = :id'); $stmt->execute(['id' => $record['household_id']]); $wardId = $stmt->fetchColumn(); }
-        $this->assertWardInScope($auth, (string) $wardId); return $record;
+        if ($wardId === null && $record['household_id'] !== null) { $stmt = $this->database->pdo()->prepare('SELECT ward_id FROM households WHERE id = :id'); $stmt->execute(['id' => $record['household_id']]); $wardId = $stmt->fetchColumn() ?: null; }
+        if ($wardId === null) { $stmt = $this->database->pdo()->prepare('SELECT t.ward_id FROM almajiri_links al INNER JOIN tsangaya_schools t ON t.id = al.tsangaya_id WHERE al.child_id = :id LIMIT 1'); $stmt->execute(['id' => $id]); $wardId = $stmt->fetchColumn() ?: null; }
+        if ($wardId !== null && $wardId !== '') { $this->assertWardInScope($auth, (string) $wardId); }
+        return $record;
     }
 
     public function create(array $auth, array $input): array

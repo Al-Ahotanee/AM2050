@@ -25,8 +25,8 @@ final class SyncService
     private function process(array $auth, array $record): array
     {
         $tempId = (string) ($record['tempId'] ?? ''); $entity = (string) ($record['entity'] ?? ''); $action = (string) ($record['operation'] ?? ''); $payload = $record['payload'] ?? null;
-        if (!preg_match('/^[0-9A-HJKMNP-TV-Z]{26}$/', $tempId) || !in_array($entity, ['household', 'child', 'attendance', 'enrollment'], true) || !in_array($action, ['create', 'update'], true) || !is_array($payload)) {
-            return ['tempId' => $tempId, 'status' => 'error', 'message' => 'Sync record has an invalid shape.'];
+        if (!preg_match('/^[0-9A-HJKMNP-TV-Z]{26}$/', $tempId) || !in_array($entity, ['household', 'child'], true) || !in_array($action, ['create', 'update'], true) || !is_array($payload)) {
+            return ['tempId' => $tempId, 'status' => 'error', 'message' => !in_array($entity, ['household', 'child'], true) ? "Offline {$entity} sync is not currently supported." : 'Sync record has an invalid shape.'];
         }
         $pdo = $this->database->pdo();
         $prior = $pdo->prepare('SELECT server_id, generated_code FROM synced_temp_ids WHERE temp_id = :tempId'); $prior->execute(['tempId' => $tempId]); $existing = $prior->fetch();

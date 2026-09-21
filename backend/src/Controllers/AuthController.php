@@ -61,7 +61,7 @@ final class AuthController
     private function setRefreshCookie(string $token): void
     {
         $secure = Env::bool('COOKIE_SECURE', true); $sameSite = ucfirst(strtolower((string) Env::get('COOKIE_SAMESITE', 'Strict')));
-        if (!in_array($sameSite, ['Strict', 'Lax', 'None'], true) || ($sameSite === 'None' && !$secure)) throw new \RuntimeException('COOKIE_SAMESITE=None requires COOKIE_SECURE=true.');
+        if (!in_array($sameSite, ['Strict', 'Lax', 'None'], true) || ($sameSite === 'None' && !$secure)) { $sameSite = 'Lax'; }
         setcookie('am2050_refresh', $token, ['expires' => time() + (int) Env::get('REFRESH_TOKEN_TTL_SECONDS', '604800'), 'path' => '/api/v1/auth', 'secure' => $secure, 'httponly' => true, 'samesite' => $sameSite]);
     }
 

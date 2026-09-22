@@ -210,9 +210,12 @@ try {
     $router->dispatch(Request::fromGlobals());
 } catch (InvalidArgumentException $error) {
     Response::error('Request validation failed.', 400, json_decode($error->getMessage(), true) ?: null);
+} catch (\PDOException $error) {
+    error_log((string) $error);
+    Response::error($error->getMessage(), 500);
 } catch (RuntimeException $error) {
     $message = $error->getMessage();
-    $notFound = str_contains(strtolower($message), 'not found') || str_contains(strtolower($message), 'does not exist');
+    $notFound = !str_starts_with($message, 'SQLSTATE') && (str_contains(strtolower($message), 'not found') || str_contains(strtolower($message), 'does not exist'));
     Response::error($message, $notFound ? 404 : 422);
 } catch (Throwable $error) {
     error_log((string) $error);

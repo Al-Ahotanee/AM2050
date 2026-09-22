@@ -1,10 +1,23 @@
 <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="48" height="48" rx="12" fill="#064E3B" />
-  <rect x="2" y="2" width="44" height="44" rx="10" stroke="#059669" strokeWidth="1.5" strokeOpacity="0.5" />
-  <circle cx="24" cy="24" r="16" fill="#10B981" fillOpacity="0.12" />
-  <path d="M24 8L26.5 15.5L34 18L26.5 20.5L24 28L21.5 20.5L14 18L21.5 15.5L24 8Z" fill="#FBBF24" />
-  <polygon points="24,14 25.5,18 24,22 22.5,18" fill="#F59E0B" />
-  <path d="M12 36C16 33.5 20 34 24 36.5C28 34 32 33.5 36 36V28C32 26 28 26.5 24 29C20 26.5 16 26 12 28V36Z" fill="#34D399" fillOpacity="0.9" />
-  <path d="M24 29V39" stroke="#064E3B" strokeWidth="2" strokeLinecap="round" />
-  <circle cx="24" cy="18" r="2" fill="#FEF3C7" />
+  <defs>
+    <linearGradient id="am-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#064E3B" />
+      <stop offset="100%" stop-color="#022C22" />
+    </linearGradient>
+    <linearGradient id="am-border" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34D399" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#059669" stop-opacity="0.3" />
+    </linearGradient>
+  </defs>
+
+  <rect width="48" height="48" rx="12" fill="url(#am-bg)" />
+  <rect x="1" y="1" width="46" height="46" rx="11" stroke="url(#am-border)" stroke-width="1.2" />
+
+  <!-- Gold Accent Node -->
+  <circle cx="41" cy="7" r="4.2" fill="#F59E0B" stroke="#064E3B" stroke-width="2" />
+  <circle cx="41" cy="7" r="1.8" fill="#FEF3C7" />
+
+  <!-- AM2050 Bold Typographic Mark -->
+  <text x="24" y="23.5" text-anchor="middle" font-family="'Plus Jakarta Sans', 'Segoe UI', system-ui, sans-serif" font-weight="800" font-size="17.5" fill="#FFFFFF" letter-spacing="0.4">AM</text>
+  <text x="24" y="38.5" text-anchor="middle" font-family="'IBM Plex Mono', 'Consolas', monospace" font-weight="700" font-size="10.5" fill="#6EE7B7" letter-spacing="0.8">2050</text>
 </svg>

@@ -84,7 +84,7 @@ function AuthenticatedApp() {
   useEffect(() => { if (!user || pendingSync === 0 || !navigator.onLine) return; const synchronize = async () => { try { await syncPendingRecords(); refreshQueue(); } catch { /* Queue remains visibly pending until a later retry. */ } }; void synchronize(); window.addEventListener("online", synchronize); return () => window.removeEventListener("online", synchronize); }, [user?.id, pendingSync]);
   if (!ready) return <main className="paper-grain grid min-h-screen place-items-center"><p className="font-mono text-xs uppercase tracking-[0.12em] text-[#617985]">Restoring secure session…</p></main>;
   if (!user) return <Login />;
-  return <AppShell user={user} onLogout={logout} pendingSync={pendingSync}><Router role={user.role} pendingSync={pendingSync} onQueueChange={refreshQueue} /></AppShell>;
+  return <AppShell user={user} onLogout={logout} pendingSync={pendingSync} onQueueChange={refreshQueue}><Router role={user.role} pendingSync={pendingSync} onQueueChange={refreshQueue} /></AppShell>;
 }
 
 function PublicRouter() { return <Switch><Route path="/" component={Landing} /><Route path="/login" component={Login} /><Route component={AuthenticatedApp} /></Switch>; }

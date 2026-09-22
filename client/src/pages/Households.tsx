@@ -1,9 +1,10 @@
 /* AM2050 — Field Ledger Modernism: household registration is a complete formal case record with live review and an A4-ready evidence document. */
 import { ChangeEvent, FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
-import { Eye, FileDown, FilePenLine, ImagePlus, Plus, RefreshCw, Search, X } from "lucide-react";
+import { Camera, Eye, FileDown, FilePenLine, ImagePlus, Plus, RefreshCw, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { LedgerColumn, LedgerTable } from "@/components/shared/LedgerTable";
 import { apiClient } from "@/api/client";
+import { PassportCameraModal } from "@/components/shared/PassportCameraModal";
 
 type Geo={id:string;name:string;ward_id?:string};
 type Record={id:string;household_code:string;father_name:string|null;mother_name:string|null;phone_number:string|null;photo_url:string|null;community_id:string|null;community_name:string|null;ward_id:string;ward_name:string;gps_lat:number|null;gps_lng:number|null;poverty_status:string|null;household_type:string|null;registration_details?:string|null};
@@ -31,6 +32,7 @@ export default function Households() {
   const [total, setTotal] = useState(0);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -254,22 +256,46 @@ export default function Households() {
             <p className="coordinate-label">AM2050 / Formal household record</p>
             <h2 className="font-display text-xl">{editing ? "Edit household registration" : "Household registration form"}</h2>
             <p className="mt-1 text-sm text-[#57707f]">Complete this record before registering linked children.</p>
-            <div className="mt-5 grid gap-5 sm:grid-cols-[10rem_1fr]">
-              <label className="grid h-44 cursor-pointer place-items-center border-2 border-dashed text-center text-xs">
-                {form.photoUrl ? (
-                  <img src={form.photoUrl} alt="Household representative" className="h-44 w-full object-cover" />
-                ) : (
-                  <>
-                    <ImagePlus />
-                    <span>
-                      Household representative
-                      <br />
-                      photograph
-                    </span>
-                  </>
+            <div className="mt-5 grid gap-5 sm:grid-cols-[11rem_1fr]">
+              <div className="flex flex-col items-center">
+                <div
+                  onClick={() => setCameraOpen(true)}
+                  className="relative grid h-48 w-full cursor-pointer place-items-center overflow-hidden rounded-md border-2 border-dashed border-[#b9c9c0] bg-[#f8faf9] text-center transition hover:border-[#167a4c]"
+                >
+                  {form.photoUrl ? (
+                    <div className="relative h-full w-full">
+                      <img
+                        src={form.photoUrl}
+                        alt="Household representative"
+                        className="h-full w-full object-cover"
+                      />
+                      <div className="absolute inset-x-0 bottom-0 bg-[#123148]/85 py-1 text-center font-mono text-[9px] font-semibold text-white backdrop-blur-xs">
+                        VERIFIED REPRESENTATIVE
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center p-3 text-xs text-[#57707f]">
+                      <div className="grid size-10 place-items-center rounded-full bg-[#167a4c]/10 text-[#167a4c]">
+                        <Camera size={20} />
+                      </div>
+                      <span className="mt-2 font-medium text-[#123148]">Representative Photo</span>
+                      <span className="mt-0.5 text-[11px] text-[#57707f]">3:4 Biometric Oval</span>
+                      <span className="mt-2 rounded bg-[#167a4c] px-2.5 py-1 font-mono text-[10px] font-semibold text-white shadow-xs">
+                        Open Viewfinder
+                      </span>
+                    </div>
+                  )}
+                </div>
+                {form.photoUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setCameraOpen(true)}
+                    className="mt-1.5 text-xs font-semibold text-[#0e5a38] hover:underline"
+                  >
+                    Change / Retake Photo
+                  </button>
                 )}
-                <input className="sr-only" type="file" accept="image/*" onChange={photo} />
-              </label>
+              </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="Father / primary contact">
                   <input className="field-input" value={form.fatherName} onChange={(e) => set("fatherName", e.target.value)} />
@@ -471,6 +497,16 @@ export default function Households() {
         )}
         {preview && <Preview record={preview} close={() => setPreview(null)} print={() => print(preview)} />}
       </section>
+      <PassportCameraModal
+        isOpen={cameraOpen}
+        onClose={() => setCameraOpen(false)}
+        onCapture={(dataUrl) => {
+          set("photoUrl", dataUrl);
+          setCameraOpen(false);
+        }}
+        title="Household Representative Photograph"
+        subtitle="Align the caregiver or household head within the oval. Standard 3:4 aspect ratio with automatic compression."
+      />
     </main>
   );
 }

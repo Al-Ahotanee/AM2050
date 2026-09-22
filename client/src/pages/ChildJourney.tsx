@@ -5,6 +5,7 @@ import { BookOpenCheck, CalendarDays, ChevronRight, ClipboardCheck, FileText, Gr
 import { toast } from "sonner";
 import { apiClient } from "@/api/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { ChildMilestonesRibbon } from "@/components/child-journey/ChildMilestonesRibbon";
 
 type JourneyChild = { id: string; child_unique_id: string; first_name: string; last_name: string; photo_url: string | null; gender: string; child_status: string; current_stage: string | null; next_action: string | null; last_event_at: string | null; school_name: string | null; class_name: string | null };
 type JourneyEvent = { id: string; type: string; family: string; occurredAt: string; recordedAt: string; summary: string; details: Record<string, unknown>; sourceType: string; canOpenSource: boolean };
@@ -57,7 +58,60 @@ export default function ChildJourney() {
       </aside>
       <section className="min-w-0">{!selectedId ? <div className="border border-dashed border-[#b9c9c0] bg-white p-10 text-center text-sm text-[#617985]">Select an authorised child to open their longitudinal journey.</div> : loadingJourney ? <div className="grid min-h-80 place-items-center border border-[#d5dfd8] bg-white text-[#617985]"><Loader2 className="animate-spin" size={26}/></div> : journey ? <>
         <article className="overflow-hidden border border-[#cfd9d2] bg-white"><div className="grid gap-0 lg:grid-cols-[auto_minmax(0,1fr)_minmax(260px,.8fr)]"><div className="grid min-h-32 w-full place-items-center bg-[#eef3ef] lg:w-36">{journey.child.photoUrl ? <img src={journey.child.photoUrl} alt={`${journey.child.name} record`} className="h-32 w-full object-cover"/> : <UserRound size={34} className="text-[#76907f]"/>}</div><div className="border-b border-[#d5dfd8] p-5 lg:border-b-0 lg:border-r"><p className="coordinate-label">CHILD JOURNEY / {journey.child.registrationId}</p><h2 className="mt-2 font-display text-2xl font-semibold tracking-[-.04em] text-[#123148]">{journey.child.name}</h2><p className="mt-2 text-sm text-[#57707f]">{journey.summary.schoolName ?? "No confirmed school placement"}{journey.summary.className ? ` · ${journey.summary.className}` : ""}</p></div><div className="bg-[#fbfaf6] p-5"><p className="coordinate-label">CURRENT PATHWAY</p><p className="mt-2 text-lg font-semibold text-[#167a4c]">{stageLabel(journey.summary.currentStage)}</p><p className="mt-2 text-sm leading-5 text-[#57707f]">{guardianView ? "Keep this record current by reporting any school or contact change to the field team." : journey.summary.nextAction}</p></div></div></article>
-        <div className="mt-5 flex flex-wrap gap-2 border-b border-[#d5dfd8] pb-4">{families.map((item) => <button key={item} onClick={() => setFamily(item)} className={`action-press rounded-full border px-3 py-1.5 text-xs font-medium ${family === item ? "border-[#123148] bg-[#123148] text-white" : "border-[#c9d5cc] bg-white text-[#46616d]"}`}>{familyLabels[item]}</button>)}</div>
+
+        <div className="mt-5">
+          <ChildMilestonesRibbon
+            currentStage={journey.summary.currentStage}
+            schoolName={journey.summary.schoolName}
+            className={journey.summary.className}
+            events={journey.events}
+            selectedMilestone={family}
+            onSelectMilestone={(fam) => setFamily(fam as never)}
+          />
+        </div>
+
+        {(journey.summary.currentStage.includes("relocated") || journey.summary.currentStage.includes("untraceable") || journey.summary.currentStage.includes("deceased") || journey.summary.nextAction?.toLowerCase().includes("follow-up") || journey.summary.nextAction?.toLowerCase().includes("intervention")) && (
+          <div className="mt-5 flex flex-col items-start justify-between gap-4 border-l-4 border-[#ae3f32] bg-[#fdf2f1] p-4 sm:flex-row sm:items-center">
+            <div>
+              <p className="font-mono text-xs font-semibold uppercase tracking-wider text-[#ae3f32]">Early Warning & Welfare Alert</p>
+              <p className="mt-1 text-sm text-[#5a211b]">This child's longitudinal progress requires caseworker verification: {journey.summary.nextAction}</p>
+            </div>
+            {!guardianView && (
+              <div className="flex gap-2 shrink-0">
+                <Link href="/defaulters" className="action-press inline-flex items-center gap-1 rounded bg-[#ae3f32] px-3 py-1.5 text-xs font-semibold text-white">
+                  Schedule Home Visit
+                </Link>
+                <Link href="/out-of-school" className="action-press inline-flex items-center gap-1 rounded border border-[#e7aaa4] bg-white px-3 py-1.5 text-xs font-semibold text-[#5a211b]">
+                  Liaison Referral
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-b border-[#d5dfd8] pb-4">
+          <div className="flex flex-wrap gap-2">
+            {families.map((item) => (
+              <button
+                key={item}
+                onClick={() => setFamily(item)}
+                className={`action-press rounded-full border px-3 py-1.5 text-xs font-medium ${
+                  family === item ? "border-[#123148] bg-[#123148] text-white" : "border-[#c9d5cc] bg-white text-[#46616d]"
+                }`}
+              >
+                {familyLabels[item]}
+              </button>
+            ))}
+          </div>
+          {family !== "all" && (
+            <button
+              onClick={() => setFamily("all")}
+              className="text-xs font-semibold text-[#167a4c] hover:underline"
+            >
+              Reset to all events
+            </button>
+          )}
+        </div>
         <div className="mt-6 space-y-8">{Object.entries(eventGroups).map(([year, events]) => <section key={year} className="grid gap-4 md:grid-cols-[110px_minmax(0,1fr)]"><div><p className="font-mono text-sm font-semibold tracking-[.12em] text-[#167a4c]">{year}</p><p className="mt-1 text-xs text-[#718592]">{events.length} recorded event{events.length === 1 ? "" : "s"}</p></div><div className="relative border-l-2 border-[#d5dfd8] pl-5">{events.map((event) => { const Icon = familyIcon[event.family] ?? FileText; const sourcePath = sourcePaths[event.sourceType]; return <article key={event.id} className="relative mb-4 border border-[#d7e0da] bg-white p-4 shadow-[0_4px_18px_rgba(18,49,72,.04)] before:absolute before:-left-[1.84rem] before:top-5 before:h-3 before:w-3 before:rounded-full before:border-2 before:border-[#167a4c] before:bg-[#fbfaf6]"><div className="flex flex-col justify-between gap-3 sm:flex-row"><div className="flex gap-3"><div className="grid h-9 w-9 shrink-0 place-items-center bg-[#eef3ef] text-[#167a4c]"><Icon size={17}/></div><div><p className="coordinate-label">{familyLabels[(event.family as keyof typeof familyLabels)] ?? "Journey event"} · {readableDate(event.occurredAt)}</p><p className="mt-1 text-sm leading-6 text-[#173948]">{event.summary}</p></div></div>{event.canOpenSource && sourcePath ? <Link href={sourcePath} className="action-press inline-flex h-8 items-center gap-1 self-start border border-[#c9d5cc] px-2 text-xs font-medium text-[#173948]">View source <ChevronRight size={14}/></Link> : null}</div></article>; })}</div></section>)}{journey.events.length === 0 ? <div className="border border-dashed border-[#c9d5cc] bg-white p-8 text-center text-sm text-[#617985]">No journey events match this filter yet.</div> : null}</div>
         <p className="mt-8 flex gap-2 border-t border-[#d5dfd8] pt-4 text-xs leading-5 text-[#718592]"><CalendarDays size={15} className="mt-0.5 shrink-0 text-[#167a4c]"/>{guardianView ? "This private timeline shows family-appropriate records for your linked child only. Internal staff notes, risk signals, and other families’ data are not shown." : "Every timeline event is linked to an AM2050 source record. The timeline supports review; it does not replace official registration, enrollment, attendance, or learning registers."}</p>
       </> : <div className="border border-dashed border-[#c9d5cc] bg-white p-10 text-center text-sm text-[#617985]">The Journey record could not be loaded.</div>}</section>

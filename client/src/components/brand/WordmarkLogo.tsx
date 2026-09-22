@@ -10,6 +10,8 @@ type WordmarkLogoProps = {
   badgeTheme?: "emerald" | "navy";
   showDot?: boolean;
   subtitleText?: string;
+  showTagline?: boolean;
+  taglineText?: string;
 };
 
 const sizes = {
@@ -29,6 +31,8 @@ export function WordmarkLogo({
   badgeTheme = "emerald",
   showDot = true,
   subtitleText = "AREWA MISSION",
+  showTagline = false,
+  taglineText = "ZERO OUT-OF-SCHOOL CHILDREN IN AREWA BY 2050",
 }: WordmarkLogoProps) {
   const s = sizes[size] || sizes.md;
 
@@ -54,6 +58,11 @@ export function WordmarkLogo({
         {showSubtitle && (
           <span className={`mt-1 font-bold uppercase tracking-[0.2em] font-mono ${subtitleColor} ${s.sub}`}>
             {subtitleText}
+          </span>
+        )}
+        {showTagline && (
+          <span className={`mt-1.5 font-bold uppercase tracking-[0.12em] font-mono ${isDark ? "text-[#34d399]" : "text-[#167a4c]"} text-[0.55rem] sm:text-[0.6rem]`}>
+            {taglineText}
           </span>
         )}
       </div>
@@ -90,6 +99,11 @@ export function WordmarkLogo({
               {subtitleText}
             </span>
           )}
+          {showTagline && (
+            <span className={`mt-2 font-bold uppercase tracking-[0.14em] font-mono ${isDark ? "text-[#34d399]" : "text-[#167a4c]"} text-[0.58rem] sm:text-[0.64rem]`}>
+              {taglineText}
+            </span>
+          )}
         </div>
       </div>
     );
@@ -108,6 +122,11 @@ export function WordmarkLogo({
         {showSubtitle && (
           <span className={`mt-1 font-bold uppercase tracking-[0.2em] font-mono ${subtitleColor} ${s.sub}`}>
             {subtitleText}
+          </span>
+        )}
+        {showTagline && (
+          <span className={`mt-1.5 font-bold uppercase tracking-[0.12em] font-mono ${isDark ? "text-[#34d399]" : "text-[#167a4c]"} text-[0.55rem] sm:text-[0.6rem]`}>
+            {taglineText}
           </span>
         )}
       </div>

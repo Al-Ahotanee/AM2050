@@ -35,7 +35,7 @@ export function AppShell({ children, user, pendingSync, onLogout, onQueueChange 
     <aside className="flex h-full w-[17.5rem] shrink-0 flex-col bg-[#123148] text-[#f7f4ec] shadow-[12px_0_36px_rgba(18,49,72,0.12)]">
       <div className="flex h-[5.15rem] items-center justify-between border-b border-white/10 px-5">
         <Link href="/workspace" onClick={closeMobile} className="group flex items-center transition-opacity hover:opacity-95">
-          <WordmarkLogo theme="dark" size="md" variant="horizontal" subtitleText="AREWA MISSION" />
+          <WordmarkLogo theme="dark" size="md" variant="horizontal" subtitleText="AREWA MISSION" showTagline taglineText="ZERO OUT-OF-SCHOOL CHILDREN" />
         </Link>
         <button
           aria-label="Close menu"
@@ -73,6 +73,14 @@ export function AppShell({ children, user, pendingSync, onLogout, onQueueChange 
           })}
         </div>
       </nav>
+      <div className="border-t border-white/10 p-3.5 bg-black/20">
+        <p className="font-mono text-[0.55rem] font-bold uppercase tracking-[0.16em] text-[#34d399]">
+          MISSION TAGLINE
+        </p>
+        <p className="mt-1 font-display text-[0.72rem] font-extrabold uppercase leading-snug tracking-tight text-white/95">
+          ZERO OUT-OF-SCHOOL CHILDREN IN AREWA BY 2050
+        </p>
+      </div>
     </aside>
   );
 
@@ -101,8 +109,8 @@ export function AppShell({ children, user, pendingSync, onLogout, onQueueChange 
             </button>
             <Link href="/workspace" className="hidden items-center gap-3 border-r border-[#d8e0da] pr-5 xl:flex">
               <WordmarkLogo theme="light" size="sm" variant="horizontal" subtitleText="AREWA MISSION 2050" />
-              <span className="ml-1 border-l border-[#d8e0da] pl-3 font-mono text-[0.57rem] uppercase tracking-[0.09em] text-[#657c87]">
-                NIGERIA / FIELD OPERATIONS
+              <span className="ml-2 border-l border-[#d8e0da] pl-3 font-mono text-[0.6rem] font-bold uppercase tracking-[0.1em] text-[#167a4c]">
+                ZERO OUT-OF-SCHOOL CHILDREN IN AREWA BY 2050
               </span>
             </Link>
             <div className="sm:hidden">

@@ -61,7 +61,23 @@ try {
     // Health endpoint responds immediately — before any DB connection — so Render's health check always succeeds.
     $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
     if ($requestPath === '/api/v1/health' && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
-        Response::success(['status' => 'ok', 'service' => 'am2050-api', 'time' => gmdate(DATE_ATOM)]);
+        $health = ['status' => 'ok', 'service' => 'am2050-api', 'time' => gmdate(DATE_ATOM)];
+        if (isset($_GET['check_db']) || isset($_GET['debug'])) {
+            try {
+                $dbTest = new Database();
+                $dbTest->pdo()->query('SELECT 1');
+                $health['database'] = ['status' => 'connected'];
+            } catch (\Throwable $e) {
+                $health['database'] = [
+                    'status' => 'disconnected',
+                    'error' => $e->getMessage(),
+                    'configured_host' => Env::get('DB_HOST'),
+                    'configured_port' => Env::get('DB_PORT'),
+                    'has_database_url' => !empty(Env::get('DATABASE_URL')),
+                ];
+            }
+        }
+        Response::success($health);
     }
 
     $database = new Database();
@@ -224,8 +240,19 @@ try {
     Response::error('Request validation failed.', 400, json_decode($error->getMessage(), true) ?: null);
 } catch (\PDOException $error) {
     error_log((string) $error);
-    $isProd = (Env::get('APP_ENV', 'production') === 'production');
-    Response::error($isProd ? 'A database error occurred. Please try again later.' : $error->getMessage(), 500);
+    $msg = $error->getMessage();
+    $isConnectionError = str_contains($msg, 'php_network_getaddresses')
+        || str_contains($msg, 'Connection refused')
+        || str_contains($msg, 'timed out')
+        || str_contains($msg, 'Name or service not known')
+        || str_contains($msg, '[2002]');
+
+    if ($isConnectionError) {
+        Response::error("Database connection failed. Unable to reach database host: {$msg}", 503);
+    }
+
+    $showDetails = (Env::get('APP_DEBUG') === 'true') || (Env::get('APP_ENV') !== 'production');
+    Response::error($showDetails ? ("Database error: {$msg}") : 'A database error occurred. Please try again later.', 500);
 } catch (RuntimeException $error) {
     $message = $error->getMessage();
     $notFound = !str_starts_with($message, 'SQLSTATE') && (str_contains(strtolower($message), 'not found') || str_contains(strtolower($message), 'does not exist'));

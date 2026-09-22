@@ -58,12 +58,12 @@ final class AuthService
     public function refresh(string $refreshToken): array
     {
         [$userId] = $this->parseRefreshCookie($refreshToken);
-        $statement = $this->pdo->prepare('SELECT rt.*, u.* FROM refresh_tokens rt INNER JOIN users u ON u.id = rt.user_id WHERE rt.user_id = :userId AND rt.expires_at > NOW() AND u.is_active = 1');
+        $statement = $this->pdo->prepare('SELECT rt.id AS token_id, rt.token_hash, u.* FROM refresh_tokens rt INNER JOIN users u ON u.id = rt.user_id WHERE rt.user_id = :userId AND rt.expires_at > NOW() AND u.is_active = 1');
         $statement->execute(['userId' => $userId]);
         $tokens = $statement->fetchAll();
         foreach ($tokens as $row) {
             if (password_verify($refreshToken, $row['token_hash'])) {
-                $this->pdo->prepare('DELETE FROM refresh_tokens WHERE id = :id')->execute(['id' => $row['id']]);
+                $this->pdo->prepare('DELETE FROM refresh_tokens WHERE id = :id')->execute(['id' => $row['token_id']]);
                 return $this->issueTokens($row);
             }
         }

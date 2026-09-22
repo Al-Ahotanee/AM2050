@@ -21,7 +21,11 @@ final class HouseholdService
         'povertyStatus' => ['type' => 'string', 'in' => ['extreme_poor','poor','moderate','not_poor'], 'nullable' => true], 'householdType' => ['type' => 'string', 'max' => 50, 'nullable' => true], 'photoUrl' => ['type' => 'string', 'max' => 1500000, 'nullable' => true], 'registrationDetails'=>['type'=>'string','max'=>30000,'nullable'=>true],
     ];
 
-    public function __construct(private readonly Database $database, private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly Database $database,
+        private readonly AuditLogger $audit,
+        private readonly ?CloudinaryService $cloudinary = null
+    ) {}
 
     public function list(array $auth, array $query): array
     {
@@ -51,19 +55,49 @@ final class HouseholdService
 
     public function create(array $auth, array $input): array
     {
-        $data = Validator::allow($input, self::RULES); if(!empty($data['photoUrl'])&&(!str_starts_with((string)$data['photoUrl'],'data:image/')||strlen((string)$data['photoUrl'])>1500000))throw new RuntimeException('Use a valid household photograph smaller than 1 MB.');
+        $data = Validator::allow($input, self::RULES);
+        if (!empty($data['photoUrl'])) {
+            $isDataUri = str_starts_with((string) $data['photoUrl'], 'data:image/');
+            $isHttp = str_starts_with((string) $data['photoUrl'], 'http://') || str_starts_with((string) $data['photoUrl'], 'https://');
+            if ((!$isDataUri && !$isHttp) || strlen((string) $data['photoUrl']) > 1500000) {
+                throw new RuntimeException('Use a valid household photograph smaller than 1 MB.');
+            }
+        }
         $this->assertWardInScope($auth, $data['wardId']);
-        return $this->database->transaction(function (PDO $pdo) use ($auth, $data): array {
-            $id = Ulids::make(); $code = IdGenerator::nextCode($pdo, 'household', 'AM2050-HH-', 6);
+        $id = Ulids::make();
+        if (!empty($data['photoUrl']) && $this->cloudinary !== null && $this->cloudinary->isConfigured()) {
+            $uploaded = $this->cloudinary->uploadImage((string) $data['photoUrl'], 'am2050/households', $id);
+            if ($uploaded !== null) {
+                $data['photoUrl'] = $uploaded;
+            }
+        }
+        return $this->database->transaction(function (PDO $pdo) use ($auth, $data, $id): array {
+            $code = IdGenerator::nextCode($pdo, 'household', 'AM2050-HH-', 6);
             $statement = $pdo->prepare('INSERT INTO households (id, household_code, father_name, mother_name, phone_number, photo_url, registration_details, community_id, ward_id, gps_lat, gps_lng, poverty_status, household_type, registered_by) VALUES (:id, :code, :fatherName, :motherName, :phoneNumber, :photoUrl, :registrationDetails, :communityId, :wardId, :gpsLat, :gpsLng, :povertyStatus, :householdType, :registeredBy)');
             $statement->execute(['id' => $id, 'code' => $code, 'fatherName' => $data['fatherName'] ?? null, 'motherName' => $data['motherName'] ?? null, 'phoneNumber' => $data['phoneNumber'] ?? null, 'photoUrl' => $data['photoUrl'] ?? null, 'registrationDetails'=>$data['registrationDetails']??null, 'communityId' => $data['communityId'] ?? null, 'wardId' => $data['wardId'], 'gpsLat' => $data['gpsLat'] ?? null, 'gpsLng' => $data['gpsLng'] ?? null, 'povertyStatus' => $data['povertyStatus'] ?? null, 'householdType' => $data['householdType'] ?? null, 'registeredBy' => $auth['id']]);
-            $record = $this->fetchById($pdo, $id); $this->audit->record($auth['id'], 'CREATE', 'household', $id, null, $record); return $record;
+            $record = $this->fetchById($pdo, $id);
+            $this->audit->record($auth['id'], 'CREATE', 'household', $id, null, $record);
+            return $record;
         });
     }
 
     public function update(array $auth, string $id, array $input): array
     {
-        $before = $this->get($auth, $id); $data = Validator::allow($input, self::RULES, true); if(!empty($data['photoUrl'])&&(!str_starts_with((string)$data['photoUrl'],'data:image/')||strlen((string)$data['photoUrl'])>1500000))throw new RuntimeException('Use a valid household photograph smaller than 1 MB.');
+        $before = $this->get($auth, $id);
+        $data = Validator::allow($input, self::RULES, true);
+        if (!empty($data['photoUrl'])) {
+            $isDataUri = str_starts_with((string) $data['photoUrl'], 'data:image/');
+            $isHttp = str_starts_with((string) $data['photoUrl'], 'http://') || str_starts_with((string) $data['photoUrl'], 'https://');
+            if ((!$isDataUri && !$isHttp) || strlen((string) $data['photoUrl']) > 1500000) {
+                throw new RuntimeException('Use a valid household photograph smaller than 1 MB.');
+            }
+            if ($this->cloudinary !== null && $this->cloudinary->isConfigured()) {
+                $uploaded = $this->cloudinary->uploadImage((string) $data['photoUrl'], 'am2050/households', $id);
+                if ($uploaded !== null) {
+                    $data['photoUrl'] = $uploaded;
+                }
+            }
+        }
         if (isset($data['wardId'])) $this->assertWardInScope($auth, $data['wardId']);
         if ($data === []) throw new RuntimeException('No supported fields were supplied.');
         return $this->database->transaction(function (PDO $pdo) use ($auth, $id, $data, $before): array {

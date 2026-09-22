@@ -42,8 +42,18 @@ final class ChildJourneyService
     public function journey(array $auth, string $childId, array $query): array
     {
         $child = $this->assertAccessibleChild($auth, $childId);
-        $this->syncChild($childId);
         $pdo = $this->database->pdo();
+
+        $syncRequested = filter_var($query['sync'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        if ($syncRequested) {
+            $this->syncChild($childId);
+        } else {
+            $chk = $pdo->prepare('SELECT 1 FROM child_journey_events WHERE child_id = :cid LIMIT 1');
+            $chk->execute(['cid' => $childId]);
+            if ($chk->fetch() === false) {
+                $this->syncChild($childId);
+            }
+        }
         $eventTypes = array_values(array_filter(array_map('trim', explode(',', (string) ($query['types'] ?? '')))));
         $cursor = trim((string) ($query['cursor'] ?? ''));
         $limit = min(50, max(5, (int) ($query['limit'] ?? 20)));

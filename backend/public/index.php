@@ -18,8 +18,10 @@ use AM2050\Core\Request;
 use AM2050\Core\Response;
 use AM2050\Core\Router;
 use AM2050\Middleware\AuthMiddleware;
+use AM2050\Middleware\RateLimitMiddleware;
 use AM2050\Services\AuthService;
 use AM2050\Services\ChildService;
+use AM2050\Services\CloudinaryService;
 use AM2050\Services\GeographyService;
 use AM2050\Services\HouseholdService;
 use AM2050\Services\UserService;
@@ -63,26 +65,36 @@ try {
     }
 
     $database = new Database();
+    $cloudinary = new CloudinaryService();
+    $rateLimit = new RateLimitMiddleware($database->pdo());
     $auth = new AuthService($database->pdo());
     $authMiddleware = new AuthMiddleware($auth);
     $audit = new AuditLogger($database->pdo());
     $authController = new AuthController($auth);
-    $householdController = new HouseholdController($authMiddleware, new HouseholdService($database, $audit));
-    $childController = new ChildController($authMiddleware, new ChildService($database, $audit));
+    $householdService = new HouseholdService($database, $audit, $cloudinary);
+    $childService = new ChildService($database, $audit, $cloudinary);
+    $householdController = new HouseholdController($authMiddleware, $householdService);
+    $childController = new ChildController($authMiddleware, $childService);
     $geographyController = new GeographyController($authMiddleware, new GeographyService($database, $audit));
-    $userController = new UserController($authMiddleware, new UserService($database, $audit));
-    $syncController = new SyncController($authMiddleware, new SyncService($database, new HouseholdService($database, $audit), new ChildService($database, $audit), $audit));
-    $educationController = new EducationController($authMiddleware, new EducationService($database, $audit));
+    $userController = new UserController($authMiddleware, new UserService($database, $audit, $cloudinary));
+    $syncController = new SyncController($authMiddleware, new SyncService($database, $householdService, $childService, $audit));
+    $educationController = new EducationController($authMiddleware, new EducationService($database, $audit, $cloudinary));
     $insightController = new InsightController($authMiddleware, new InsightService($database));
     $programController = new ProgramController($authMiddleware, new ProgramService($database, $audit));
     $governanceController = new GovernanceController($authMiddleware, new GovernanceService($database, $audit));
     $reportController = new ReportController($authMiddleware, $database);
     $childJourneyController = new ChildJourneyController($authMiddleware, new ChildJourneyService($database, $audit));
-    $dashboardOperationsController = new DashboardOperationsController($authMiddleware, new DashboardOperationsService($database, $audit, new InsightService($database)));
+    $dashboardOperationsController = new DashboardOperationsController($authMiddleware, new DashboardOperationsService($database, $audit, new InsightService($database), $cloudinary));
     $router = new Router();
     $router->add('GET', '/api/v1/health', static fn() => Response::success(['status' => 'ok', 'service' => 'am2050-api', 'time' => gmdate(DATE_ATOM)]));
-    $router->add('POST', '/api/v1/auth/login', static fn(Request $request) => $authController->login($request));
-    $router->add('POST', '/api/v1/auth/refresh', static fn(Request $request) => $authController->refresh($request));
+    $router->add('POST', '/api/v1/auth/login', static function (Request $request) use ($rateLimit, $authController): never {
+        $rateLimit->check($request, 'login', 15, 60);
+        $authController->login($request);
+    });
+    $router->add('POST', '/api/v1/auth/refresh', static function (Request $request) use ($rateLimit, $authController): never {
+        $rateLimit->check($request, 'refresh', 30, 60);
+        $authController->refresh($request);
+    });
     $router->add('POST', '/api/v1/auth/logout', static fn(Request $request) => $authController->logout($request));
     $router->add('GET', '/api/v1/auth/me', static function (Request $request) use ($authMiddleware, $authController): never { $authMiddleware->require($request); $authController->me($request); });
     $router->add('GET', '/api/v1/households', static fn(Request $request) => $householdController->list($request));
@@ -212,7 +224,8 @@ try {
     Response::error('Request validation failed.', 400, json_decode($error->getMessage(), true) ?: null);
 } catch (\PDOException $error) {
     error_log((string) $error);
-    Response::error($error->getMessage(), 500);
+    $isProd = (Env::get('APP_ENV', 'production') === 'production');
+    Response::error($isProd ? 'A database error occurred. Please try again later.' : $error->getMessage(), 500);
 } catch (RuntimeException $error) {
     $message = $error->getMessage();
     $notFound = !str_starts_with($message, 'SQLSTATE') && (str_contains(strtolower($message), 'not found') || str_contains(strtolower($message), 'does not exist'));

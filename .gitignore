@@ -125,3 +125,4 @@ backend/vendor/
 
 # Local audit scripts
 mobile_audit_375.py
+.manus-logs/

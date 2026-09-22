@@ -23,7 +23,11 @@ final class ChildService
         'childStatus' => ['type' => 'string', 'in' => ['active','deceased','relocated','untraceable'], 'nullable' => true],
     ];
 
-    public function __construct(private readonly Database $database, private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly Database $database,
+        private readonly AuditLogger $audit,
+        private readonly ?CloudinaryService $cloudinary = null
+    ) {}
 
     public function list(array $auth, array $query): array
     {
@@ -49,19 +53,68 @@ final class ChildService
 
     public function create(array $auth, array $input): array
     {
-        $data = Validator::allow($input, self::RULES); if(!empty($data['photoUrl'])&&(!str_starts_with((string)$data['photoUrl'],'data:image/')||strlen((string)$data['photoUrl'])>1500000))throw new RuntimeException('Use a valid child photograph smaller than 1 MB.'); $isAlmajiri=($data['almajiriStatus']??'not_almajiri')==='almajiri';if($isAlmajiri){if(empty($data['wardId'])||empty($data['communityId'])||empty($data['tsangayaId']))throw new RuntimeException('Choose the ward, community, and Tsangaya school for an Almajiri child.');$this->assertTsangayaPlacement((string)$data['tsangayaId'],(string)$data['wardId'],(string)$data['communityId']);$data['householdId']=null;$wardId=(string)$data['wardId'];}else{$wardId=$this->householdWard($data['householdId']??null);if($wardId===null)throw new RuntimeException('Choose a household for a child who is not an Almajiri student.');}
+        $data = Validator::allow($input, self::RULES);
+        if (!empty($data['photoUrl'])) {
+            $isDataUri = str_starts_with((string) $data['photoUrl'], 'data:image/');
+            $isHttp = str_starts_with((string) $data['photoUrl'], 'http://') || str_starts_with((string) $data['photoUrl'], 'https://');
+            if ((!$isDataUri && !$isHttp) || strlen((string) $data['photoUrl']) > 1500000) {
+                throw new RuntimeException('Use a valid child photograph smaller than 1 MB.');
+            }
+        }
+        $isAlmajiri = ($data['almajiriStatus'] ?? 'not_almajiri') === 'almajiri';
+        if ($isAlmajiri) {
+            if (empty($data['wardId']) || empty($data['communityId']) || empty($data['tsangayaId'])) {
+                throw new RuntimeException('Choose the ward, community, and Tsangaya school for an Almajiri child.');
+            }
+            $this->assertTsangayaPlacement((string) $data['tsangayaId'], (string) $data['wardId'], (string) $data['communityId']);
+            $data['householdId'] = null;
+            $wardId = (string) $data['wardId'];
+        } else {
+            $wardId = $this->householdWard($data['householdId'] ?? null);
+            if ($wardId === null) {
+                throw new RuntimeException('Choose a household for a child who is not an Almajiri student.');
+            }
+        }
         $this->assertWardInScope($auth, $wardId);
-        return $this->database->transaction(function (PDO $pdo) use ($auth, $data, $wardId, $isAlmajiri): array {
-            $id = Ulids::make(); $code = IdGenerator::nextCode($pdo, 'child', 'AM2050-CHILD-', 6);
+        $id = Ulids::make();
+        if (!empty($data['photoUrl']) && $this->cloudinary !== null && $this->cloudinary->isConfigured()) {
+            $uploaded = $this->cloudinary->uploadImage((string) $data['photoUrl'], 'am2050/children', $id);
+            if ($uploaded !== null) {
+                $data['photoUrl'] = $uploaded;
+            }
+        }
+        return $this->database->transaction(function (PDO $pdo) use ($auth, $data, $wardId, $isAlmajiri, $id): array {
+            $code = IdGenerator::nextCode($pdo, 'child', 'AM2050-CHILD-', 6);
             $statement = $pdo->prepare('INSERT INTO children (id, child_unique_id, attendance_qr_token, first_name, last_name, gender, date_of_birth, estimated_age, photo_url, registration_details, household_id, guardian_phone, ward_id, disability_status, almajiri_status, child_status, registered_by) VALUES (:id, :code, :qrToken, :firstName, :lastName, :gender, :dateOfBirth, :estimatedAge, :photoUrl, :registrationDetails, :householdId, :guardianPhone, :wardId, :disabilityStatus, :almajiriStatus, :childStatus, :registeredBy)');
             $statement->execute(['id' => $id, 'code' => $code, 'qrToken'=>$id, 'firstName' => $data['firstName'], 'lastName' => $data['lastName'], 'gender' => $data['gender'], 'dateOfBirth' => $data['dateOfBirth'] ?? null, 'estimatedAge' => $data['estimatedAge'] ?? null, 'photoUrl' => $data['photoUrl'] ?? null, 'registrationDetails'=>$data['registrationDetails']??null, 'householdId' => $data['householdId'] ?? null, 'guardianPhone' => $data['guardianPhone'] ?? null, 'wardId' => $data['wardId'] ?? null, 'disabilityStatus' => $data['disabilityStatus'] ?? 'none', 'almajiriStatus' => $data['almajiriStatus'] ?? 'not_almajiri', 'childStatus' => $data['childStatus'] ?? 'active', 'registeredBy' => $auth['id']]);
-            if($isAlmajiri){$link=$pdo->prepare("INSERT INTO almajiri_links (id,child_id,tsangaya_id,current_status) VALUES (:id,:child,:tsangaya,'active')");$link->execute(['id'=>Ulids::make(),'child'=>$id,'tsangaya'=>$data['tsangayaId']]);}$record = $this->fetchById($pdo, $id); $this->audit->record($auth['id'], 'CREATE', 'child', $id, null, $record); return $record;
+            if ($isAlmajiri) {
+                $link = $pdo->prepare("INSERT INTO almajiri_links (id,child_id,tsangaya_id,current_status) VALUES (:id,:child,:tsangaya,'active')");
+                $link->execute(['id' => Ulids::make(), 'child' => $id, 'tsangaya' => $data['tsangayaId']]);
+            }
+            $record = $this->fetchById($pdo, $id);
+            $this->audit->record($auth['id'], 'CREATE', 'child', $id, null, $record);
+            return $record;
         });
     }
 
     public function update(array $auth, string $id, array $input): array
     {
-        $before = $this->get($auth, $id); $data = Validator::allow($input, self::RULES, true); if(!empty($data['photoUrl'])&&(!str_starts_with((string)$data['photoUrl'],'data:image/')||strlen((string)$data['photoUrl'])>1500000))throw new RuntimeException('Use a valid child photograph smaller than 1 MB.'); if ($data === []) throw new RuntimeException('No supported fields were supplied.');
+        $before = $this->get($auth, $id);
+        $data = Validator::allow($input, self::RULES, true);
+        if (!empty($data['photoUrl'])) {
+            $isDataUri = str_starts_with((string) $data['photoUrl'], 'data:image/');
+            $isHttp = str_starts_with((string) $data['photoUrl'], 'http://') || str_starts_with((string) $data['photoUrl'], 'https://');
+            if ((!$isDataUri && !$isHttp) || strlen((string) $data['photoUrl']) > 1500000) {
+                throw new RuntimeException('Use a valid child photograph smaller than 1 MB.');
+            }
+            if ($this->cloudinary !== null && $this->cloudinary->isConfigured()) {
+                $uploaded = $this->cloudinary->uploadImage((string) $data['photoUrl'], 'am2050/children', $id);
+                if ($uploaded !== null) {
+                    $data['photoUrl'] = $uploaded;
+                }
+            }
+        }
+        if ($data === []) throw new RuntimeException('No supported fields were supplied.');
         return $this->database->transaction(function (PDO $pdo) use ($auth, $id, $data, $before): array {
             $map = ['firstName'=>'first_name','lastName'=>'last_name','gender'=>'gender','dateOfBirth'=>'date_of_birth','estimatedAge'=>'estimated_age','photoUrl'=>'photo_url','registrationDetails'=>'registration_details','householdId'=>'household_id','guardianPhone'=>'guardian_phone','wardId'=>'ward_id','disabilityStatus'=>'disability_status','almajiriStatus'=>'almajiri_status','childStatus'=>'child_status'];
             $sets=[]; $params=['id'=>$id]; foreach ($data as $key=>$value) { $sets[]=$map[$key].' = :'.$key; $params[$key]=$value; } $pdo->prepare('UPDATE children SET '.implode(', ', $sets).' WHERE id = :id')->execute($params);

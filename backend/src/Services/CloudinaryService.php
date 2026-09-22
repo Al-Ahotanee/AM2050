@@ -29,10 +29,15 @@ final class CloudinaryService
         }
 
         if (!$this->isConfigured()) {
-            $this->cloudName = Env::get('CLOUDINARY_CLOUD_NAME') ?: $this->cloudName;
-            $this->apiKey = Env::get('CLOUDINARY_API_KEY') ?: $this->apiKey;
-            $this->apiSecret = Env::get('CLOUDINARY_API_SECRET') ?: $this->apiSecret;
+            $this->cloudName = Env::get('CLOUDINARY_CLOUD_NAME') ?: ($this->cloudName ?: 'dxnbuqcfy');
+            $this->apiKey = Env::get('CLOUDINARY_API_KEY') ?: ($this->apiKey ?: '346594288951922');
+            $this->apiSecret = Env::get('CLOUDINARY_API_SECRET') ?: ($this->apiSecret ?: 'ZyOV7-jT3MW-ks_LyIlDjCRfK5E');
         }
+    }
+
+    public function getCloudName(): ?string
+    {
+        return $this->cloudName;
     }
 
     public function isConfigured(): bool

@@ -63,6 +63,11 @@ try {
     if ($requestPath === '/api/v1/health' && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
         $health = ['status' => 'ok', 'service' => 'am2050-api', 'time' => gmdate(DATE_ATOM)];
         if (isset($_GET['check_db']) || isset($_GET['debug'])) {
+            $cloud = new CloudinaryService();
+            $health['cloudinary'] = [
+                'configured' => $cloud->isConfigured(),
+                'cloud_name' => $cloud->getCloudName(),
+            ];
             try {
                 $dbTest = new Database();
                 $dbTest->pdo()->query('SELECT 1');

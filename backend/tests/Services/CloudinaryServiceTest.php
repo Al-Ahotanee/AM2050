@@ -8,11 +8,11 @@ use PHPUnit\Framework\TestCase;
 
 final class CloudinaryServiceTest extends TestCase
 {
-    public function testIsConfiguredReturnsFalseWhenNoCredentialsProvided(): void
+    public function testIsConfiguredReturnsTrueWithDefaultCredentials(): void
     {
         $service = new CloudinaryService();
-        // In local test environment without CLOUDINARY_URL env
-        self::assertFalse($service->isConfigured());
+        self::assertTrue($service->isConfigured());
+        self::assertSame('dxnbuqcfy', $service->getCloudName());
     }
 
     public function testUploadImageReturnsNullOnEmptyInput(): void

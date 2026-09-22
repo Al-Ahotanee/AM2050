@@ -17,6 +17,14 @@ services:
         value: Africa/Lagos
       - key: VITE_AM2050_API_URL
         value: /api/v1
+      - key: CLOUDINARY_URL
+        value: cloudinary://346594288951922:ZyOV7-jT3MW-ks_LyIlDjCRfK5E@dxnbuqcfy
+      - key: CLOUDINARY_CLOUD_NAME
+        value: dxnbuqcfy
+      - key: CLOUDINARY_API_KEY
+        value: "346594288951922"
+      - key: CLOUDINARY_API_SECRET
+        value: ZyOV7-jT3MW-ks_LyIlDjCRfK5E
       - key: DATABASE_URL
         sync: false
       - key: DB_HOST

@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { apiClient } from "@/api/client";
 import { createLocalChild } from "@/lib/fieldStore";
 import { PassportCameraModal } from "@/components/shared/PassportCameraModal";
+import { GpsCaptureControl } from "@/components/shared/GpsCaptureControl";
+import { DuplicateMatch, DuplicateWarningModal } from "@/components/shared/DuplicateWarningModal";
 
 type Household = {
   id: string;
@@ -86,6 +88,9 @@ export default function ChildRegistration() {
   const [saved, setSaved] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [duplicateMatches, setDuplicateMatches] = useState<DuplicateMatch[]>([]);
+  const [duplicateModalOpen, setDuplicateModalOpen] = useState(false);
+  const [duplicateConfirmed, setDuplicateConfirmed] = useState(false);
 
   useEffect(() => {
     void Promise.all([
@@ -101,8 +106,12 @@ export default function ChildRegistration() {
     });
   }, []);
 
-  const set = <K extends keyof Form>(key: K, value: Form[K]) =>
+  const set = <K extends keyof Form>(key: K, value: Form[K]) => {
+    if (key === "firstName" || key === "lastName") {
+      setDuplicateConfirmed(false);
+    }
     setForm((current) => ({ ...current, [key]: value }));
+  };
 
   const chooseHousehold = (id: string) => {
     const household = households.find((item) => item.id === id);
@@ -148,20 +157,7 @@ export default function ChildRegistration() {
     );
   };
 
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
-    const required = (
-      form.isAlmajiri
-        ? ["firstName", "lastName", "gender", "photoUrl", "wardId", "communityId", "tsangayaId"]
-        : ["firstName", "lastName", "gender", "photoUrl", "householdId", "guardianPhone"]
-    ) as (keyof Form)[];
-
-    const next = Object.fromEntries(required.filter((key) => !form[key]).map((key) => [key, "Required"]));
-    setErrors(next);
-    if (Object.keys(next).length) {
-      toast.error("Complete every required field before saving.");
-      return;
-    }
+  const executeSave = async () => {
     setSaving(true);
     const body = {
       firstName: form.firstName.trim(),
@@ -217,6 +213,51 @@ export default function ChildRegistration() {
       return;
     }
     toast.error(response.error);
+  };
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    const required = (
+      form.isAlmajiri
+        ? ["firstName", "lastName", "gender", "photoUrl", "wardId", "communityId", "tsangayaId"]
+        : ["firstName", "lastName", "gender", "photoUrl", "householdId", "guardianPhone"]
+    ) as (keyof Form)[];
+
+    const next = Object.fromEntries(required.filter((key) => !form[key]).map((key) => [key, "Required"]));
+    setErrors(next);
+    if (Object.keys(next).length) {
+      toast.error("Complete every required field before saving.");
+      return;
+    }
+
+    if (!duplicateConfirmed && navigator.onLine) {
+      setSaving(true);
+      try {
+        const params = new URLSearchParams({
+          firstName: form.firstName.trim(),
+          lastName: form.lastName.trim(),
+        });
+        if (form.estimatedAge) params.set("estimatedAge", form.estimatedAge);
+        if (form.wardId) params.set("wardId", form.wardId);
+
+        const dupRes = await apiClient.request<{
+          duplicate_found: boolean;
+          risk_level: string;
+          matches: DuplicateMatch[];
+        }>(`/children/check-duplicate?${params.toString()}`);
+
+        if (dupRes.success && dupRes.data.duplicate_found && dupRes.data.matches.length > 0) {
+          setSaving(false);
+          setDuplicateMatches(dupRes.data.matches);
+          setDuplicateModalOpen(true);
+          return;
+        }
+      } catch (err) {
+        console.warn("Duplicate check error:", err);
+      }
+    }
+
+    await executeSave();
   };
 
   if (saved) {
@@ -539,24 +580,12 @@ export default function ChildRegistration() {
                   onChange={(e) => set("remarks", e.target.value)}
                 />
               </Field>
-              <Field label="GPS coordinates" wide>
-                <div className="flex gap-2">
-                  <input
-                    className="field-input"
-                    placeholder="Latitude, longitude"
-                    value={form.gps}
-                    onChange={(e) => set("gps", e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    aria-label="Capture coordinates"
-                    onClick={gps}
-                    disabled={capturing}
-                    className="action-press rounded border border-[#b9c9c0] px-4"
-                  >
-                    <Crosshair size={16} />
-                  </button>
-                </div>
+              <Field label="GPS coordinates (high-precision field lock)" wide>
+                <GpsCaptureControl
+                  value={form.gps}
+                  onChange={(res) => set("gps", res.raw)}
+                  wardName={wards.find((w) => w.id === form.wardId)?.name}
+                />
               </Field>
             </div>
           </Section>
@@ -585,6 +614,19 @@ export default function ChildRegistration() {
         }}
         title="Child Biometric Passport Photograph"
         subtitle="Position the child within the oval guide. Ensures standard 3:4 aspect ratio for AM2050 student ID cards."
+      />
+
+      {/* Phonetic & Anti-Fraud Duplicate Warning Modal */}
+      <DuplicateWarningModal
+        isOpen={duplicateModalOpen}
+        onClose={() => setDuplicateModalOpen(false)}
+        onProceed={() => {
+          setDuplicateModalOpen(false);
+          setDuplicateConfirmed(true);
+          void executeSave();
+        }}
+        candidateName={`${form.firstName} ${form.lastName}`.trim()}
+        matches={duplicateMatches}
       />
     </main>
   );

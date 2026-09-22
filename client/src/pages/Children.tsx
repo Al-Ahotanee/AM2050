@@ -1,11 +1,12 @@
 /* AM2050 — Field Ledger Modernism: the Child Register is the authoritative formal registration record; student identity and QR records belong only to approved enrollment. */
 import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
-import { Eye, FileDown, Link2, Plus, RefreshCw, Search, X } from "lucide-react";
+import { CreditCard, Eye, FileDown, Link2, Plus, RefreshCw, Search, X } from "lucide-react";
 import { Link } from "wouter";
 import { toast } from "sonner";
 import { apiClient } from "@/api/client";
 import { LedgerColumn, LedgerTable } from "@/components/shared/LedgerTable";
 import { useAuth } from "@/contexts/AuthContext";
+import { StudentIdCardModal } from "@/components/school/StudentIdCardModal";
 type Child={id:string;child_unique_id:string;first_name:string;last_name:string;gender:string;date_of_birth?:string|null;estimated_age?:number|null;disability_status?:string|null;almajiri_status?:string|null;registration_details?:string|null;photo_url:string|null;guardian_phone:string|null;household_code:string|null;household_phone?:string|null;father_name:string|null;mother_name:string|null;ward_name?:string|null;community_name?:string|null};
 type Details={middleName?:string;guardianName?:string;educationStatus?:string;attendanceBarrier?:string;healthNote?:string;gps?:string;remarks?:string;tsangayaName?:string};
 const guardianConfirmRoles=new Set(["super_admin","program_admin","lga_supervisor","ward_supervisor","mobilizer"]);
@@ -22,6 +23,7 @@ export default function Children() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [preview, setPreview] = useState<Child | null>(null);
+  const [cardChild, setCardChild] = useState<Child | null>(null);
   const [linking, setLinking] = useState<Child | null>(null);
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
@@ -130,6 +132,9 @@ export default function Children() {
           <IconButton label="View child registration form" onClick={() => setPreview(r)}>
             <Eye size={16} />
           </IconButton>
+          <IconButton label="Print Biometric PVC Student ID Card" onClick={() => setCardChild(r)}>
+            <CreditCard size={16} />
+          </IconButton>
           {!schoolRole && user && guardianConfirmRoles.has(user.role) && (
             <button
               onClick={() => {
@@ -204,6 +209,31 @@ export default function Children() {
           />
         </div>
         {preview && <ChildRegistrationPreview child={preview} close={() => setPreview(null)} />}
+        <StudentIdCardModal
+          isOpen={!!cardChild}
+          onClose={() => setCardChild(null)}
+          student={
+            cardChild
+              ? {
+                  id: cardChild.id,
+                  childCode: cardChild.child_unique_id,
+                  firstName: cardChild.first_name,
+                  middleName: parse(cardChild).middleName,
+                  lastName: cardChild.last_name,
+                  photoUrl: cardChild.photo_url,
+                  gender: cardChild.gender,
+                  dateOfBirth: cardChild.date_of_birth,
+                  estimatedAge: cardChild.estimated_age,
+                  wardName: cardChild.ward_name,
+                  guardianPhone: cardChild.guardian_phone || cardChild.household_phone,
+                  guardianName:
+                    [cardChild.father_name, cardChild.mother_name].filter(Boolean).join(" / ") ||
+                    parse(cardChild).guardianName,
+                  schoolName: parse(cardChild).tsangayaName,
+                }
+              : null
+          }
+        />
         {linking && (
           <div className="fixed inset-0 z-50 grid overflow-y-auto bg-[#082236]/45 p-4 sm:place-items-center">
             <form onSubmit={confirm} className="my-4 w-full max-w-lg bg-[#fbfaf6] p-5 shadow-xl">

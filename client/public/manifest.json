@@ -3,9 +3,14 @@
   "short_name": "AM2050",
   "description": "Zero Out-of-School Children in Arewa by 2050.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "any",
+  "categories": ["education", "productivity", "government"],
   "background_color": "#fbfaf6",
   "theme_color": "#123148",
-  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
 }
 

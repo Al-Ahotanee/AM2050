@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { LedgerColumn, LedgerTable } from "@/components/shared/LedgerTable";
 import { apiClient } from "@/api/client";
 import { PassportCameraModal } from "@/components/shared/PassportCameraModal";
+import { GpsCaptureControl } from "@/components/shared/GpsCaptureControl";
 
 type Geo={id:string;name:string;ward_id?:string};
 type Record={id:string;household_code:string;father_name:string|null;mother_name:string|null;phone_number:string|null;photo_url:string|null;community_id:string|null;community_name:string|null;ward_id:string;ward_name:string;gps_lat:number|null;gps_lng:number|null;poverty_status:string|null;household_type:string|null;registration_details?:string|null};
@@ -364,12 +365,18 @@ export default function Households() {
                 <Field label="Sanitation arrangement">
                   <input className="field-input" value={form.sanitation} onChange={(e) => set("sanitation", e.target.value)} />
                 </Field>
-                <Field label="Latitude">
-                  <input className="field-input" value={form.gpsLat} onChange={(e) => set("gpsLat", e.target.value)} />
-                </Field>
-                <Field label="Longitude">
-                  <input className="field-input" value={form.gpsLng} onChange={(e) => set("gpsLng", e.target.value)} />
-                </Field>
+                <div className="sm:col-span-3">
+                  <Field label="GPS Geolocation (High-Precision Field Lock)">
+                    <GpsCaptureControl
+                      value={form.gpsLat && form.gpsLng ? `${form.gpsLat}, ${form.gpsLng}` : ""}
+                      onChange={(res) => {
+                        set("gpsLat", res.lat.toFixed(6));
+                        set("gpsLng", res.lng.toFixed(6));
+                      }}
+                      wardName={wards.find((w) => w.id === form.wardId)?.name}
+                    />
+                  </Field>
+                </div>
               </div>
             </FormBlock>
             <FormBlock title="Composition, livelihood, and consent">

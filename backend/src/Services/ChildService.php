@@ -5,6 +5,7 @@ namespace AM2050\Services;
 
 use AM2050\Core\Database;
 use AM2050\Support\AuditLogger;
+use AM2050\Support\HausaPhonetics;
 use AM2050\Support\IdGenerator;
 use AM2050\Support\ScopeFilter;
 use AM2050\Support\Ulids;
@@ -123,6 +124,91 @@ final class ChildService
     }
 
     public function confirmGuardianPhone(array $auth,string $id,array $input):array{$phone=preg_replace('/\s+/', '',(string)($input['guardianPhone']??''));if(!preg_match('/^0\d{10}$/',$phone))throw new RuntimeException('Provide a valid 11-digit guardian phone number.');$before=$this->get($auth,$id);$guardian=$this->database->pdo()->prepare("SELECT id FROM users WHERE phone=:phone AND role='guardian' AND is_active=1 LIMIT 1");$guardian->execute(['phone'=>$phone]);if(!$guardian->fetchColumn())throw new RuntimeException('No active Guardian account is verified for this phone number. Create or activate the guardian account first.');return $this->database->transaction(function(PDO $pdo)use($auth,$id,$phone,$before):array{$pdo->prepare('UPDATE children SET guardian_phone=:phone WHERE id=:id')->execute(['phone'=>$phone,'id'=>$id]);$after=$this->fetchById($pdo,$id);$this->audit->record($auth['id'],'CONFIRM_GUARDIAN','child',$id,$before,$after);return$after;});}
+
+    public function checkDuplicate(array $auth, array $query): array
+    {
+        $firstName = trim((string) ($query['firstName'] ?? ''));
+        $lastName = trim((string) ($query['lastName'] ?? ''));
+        $age = isset($query['estimatedAge']) && is_numeric($query['estimatedAge']) ? (int) $query['estimatedAge'] : null;
+        $wardId = isset($query['wardId']) ? trim((string) $query['wardId']) : null;
+
+        if ($firstName === '' && $lastName === '') {
+            return ['duplicate_found' => false, 'risk_level' => 'low', 'matches' => []];
+        }
+
+        $pdo = $this->database->pdo();
+        $sql = 'SELECT c.id, c.child_unique_id, c.first_name, c.last_name, c.gender, c.date_of_birth, c.estimated_age, c.photo_url, c.household_id, c.ward_id, c.created_at, h.household_code, h.father_name, h.mother_name, w.name as ward_name
+                FROM children c
+                LEFT JOIN households h ON h.id = c.household_id
+                LEFT JOIN wards w ON w.id = COALESCE(h.ward_id, c.ward_id)
+                LIMIT 500';
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute();
+        $candidates = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $matches = [];
+        foreach ($candidates as $cand) {
+            $cFirst = (string) ($cand['first_name'] ?? '');
+            $cLast = (string) ($cand['last_name'] ?? '');
+
+            $firstSim = HausaPhonetics::similarity($firstName, $cFirst);
+            $lastSim = HausaPhonetics::similarity($lastName, $cLast);
+            $avgSim = ($firstSim + $lastSim) / 2.0;
+
+            // Age check
+            $candAge = $cand['estimated_age'] !== null ? (int) $cand['estimated_age'] : null;
+            $ageMatch = false;
+            if ($age !== null && $candAge !== null) {
+                $ageMatch = abs($age - $candAge) <= 1;
+            }
+
+            // Ward check
+            $candWardId = (string) ($cand['ward_id'] ?? '');
+            $wardMatch = ($wardId !== null && $wardId !== '' && $candWardId === $wardId);
+
+            if ($avgSim >= 0.78) {
+                $risk = 'medium';
+                if ($avgSim >= 0.90 && ($ageMatch || $wardMatch)) {
+                    $risk = 'high';
+                } elseif ($avgSim >= 0.85) {
+                    $risk = 'high';
+                }
+
+                $matches[] = [
+                    'id' => $cand['id'],
+                    'child_unique_id' => $cand['child_unique_id'],
+                    'first_name' => $cand['first_name'],
+                    'last_name' => $cand['last_name'],
+                    'photo_url' => $cand['photo_url'],
+                    'gender' => $cand['gender'],
+                    'estimated_age' => $cand['estimated_age'],
+                    'household_code' => $cand['household_code'],
+                    'parents' => array_values(array_filter([$cand['father_name'], $cand['mother_name']])),
+                    'ward_name' => $cand['ward_name'],
+                    'similarity_score' => round($avgSim * 100, 1),
+                    'risk_level' => $risk,
+                    'created_at' => $cand['created_at'],
+                ];
+            }
+        }
+
+        usort($matches, fn($a, $b) => $b['similarity_score'] <=> $a['similarity_score']);
+        $topMatches = array_slice($matches, 0, 5);
+
+        $hasHigh = false;
+        foreach ($topMatches as $m) {
+            if ($m['risk_level'] === 'high') {
+                $hasHigh = true;
+                break;
+            }
+        }
+
+        return [
+            'duplicate_found' => count($topMatches) > 0,
+            'risk_level' => $hasHigh ? 'high' : (count($topMatches) > 0 ? 'medium' : 'low'),
+            'matches' => $topMatches,
+        ];
+    }
 
     private function householdWard(?string $householdId): ?string { if ($householdId === null) return null; $statement=$this->database->pdo()->prepare('SELECT ward_id FROM households WHERE id=:id'); $statement->execute(['id'=>$householdId]); return $statement->fetchColumn() ?: null; }
     private function assertTsangayaPlacement(string $tsangayaId,string $wardId,string $communityId):void{$statement=$this->database->pdo()->prepare('SELECT id FROM tsangaya_schools WHERE id=:id AND ward_id=:ward AND community_id=:community');$statement->execute(['id'=>$tsangayaId,'ward'=>$wardId,'community'=>$communityId]);if(!$statement->fetchColumn())throw new RuntimeException('Choose a registered Tsangaya school within the selected ward and community.');}

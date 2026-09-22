@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Route, Switch } from "wouter";
 import { Toaster } from "@/components/ui/sonner";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { PwaInstallPrompt } from "@/components/shared/PwaInstallPrompt";
 import { AppShell } from "@/components/layout/AppShell";
 import { RequireModule } from "@/components/auth/RequireModule";
 import { Role } from "@/lib/access";
@@ -88,4 +89,4 @@ function AuthenticatedApp() {
 }
 
 function PublicRouter() { return <Switch><Route path="/" component={Landing} /><Route path="/login" component={Login} /><Route component={AuthenticatedApp} /></Switch>; }
-export default function App() { return <ErrorBoundary><AuthProvider><PublicRouter /><Toaster /></AuthProvider></ErrorBoundary>; }
+export default function App() { return <ErrorBoundary><AuthProvider><PublicRouter /><PwaInstallPrompt /><Toaster /></AuthProvider></ErrorBoundary>; }

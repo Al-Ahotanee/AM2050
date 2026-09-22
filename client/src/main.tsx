@@ -6,8 +6,16 @@ createRoot(document.getElementById("root")!).render(<App />);
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/service-worker.js").catch(() => {
-      // Offline shell remains optional; synchronization is managed separately.
-    });
+    navigator.serviceWorker
+      .register("/sw.js")
+      .then((reg) => {
+        // Background sync registration if supported
+        if ("sync" in reg) {
+          (reg as any).sync.register("sync-am2050-field-records").catch(() => {});
+        }
+      })
+      .catch((err) => {
+        console.warn("PWA Service worker registration failed:", err);
+      });
   });
 }

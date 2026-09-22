@@ -123,6 +123,7 @@ try {
     $router->add('POST', '/api/v1/households', static fn(Request $request) => $householdController->create($request));
     $router->add('PUT', '/api/v1/households/:id', static fn(Request $request, array $params) => $householdController->update($request, $params));
     $router->add('GET', '/api/v1/children', static fn(Request $request) => $childController->list($request));
+    $router->add('GET', '/api/v1/children/check-duplicate', static fn(Request $request) => $childController->checkDuplicate($request));
     $router->add('GET', '/api/v1/children/:id', static fn(Request $request, array $params) => $childController->get($request, $params));
     $router->add('POST', '/api/v1/children', static fn(Request $request) => $childController->create($request));
     $router->add('PUT', '/api/v1/children/:id', static fn(Request $request, array $params) => $childController->update($request, $params));

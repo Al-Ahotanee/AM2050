@@ -27,14 +27,15 @@ final class AuthService
 
         $statement = $this->pdo->prepare(
             'SELECT * FROM users 
-             WHERE phone = :exact 
+             WHERE phone = :exactPhone 
                 OR phone = :normPhone 
-                OR (email IS NOT NULL AND LOWER(email) = LOWER(:exact))
+                OR (email IS NOT NULL AND LOWER(email) = :email)
              LIMIT 1'
         );
         $statement->execute([
-            'exact' => $raw,
+            'exactPhone' => $raw,
             'normPhone' => $normPhone,
+            'email' => strtolower($raw),
         ]);
         $user = $statement->fetch();
         if ($user === false || !(bool) $user['is_active']) {

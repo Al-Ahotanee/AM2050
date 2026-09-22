@@ -17,6 +17,7 @@ final class AuthController
         $identifier = trim((string) (
             $request->input('phone') 
             ?? $request->input('email') 
+            ?? $request->input('login') 
             ?? $request->input('identifier') 
             ?? $request->input('username') 
             ?? ''
